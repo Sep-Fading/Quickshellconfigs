@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Wayland
+import "./Colors.js" as Colors
 
 PanelWindow {
     id: topBar
@@ -16,7 +17,7 @@ PanelWindow {
         right: true
     }
     implicitHeight: 30
-    color: "#1e1e2e" 
+    color: Colors.background
 
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.exclusionMode: ExclusionMode.Auto
@@ -35,7 +36,7 @@ PanelWindow {
     Text {
         id: timeText
         anchors.centerIn: parent
-        color: "#cdd6f4"
+        color: Colors.foreground
         font.bold: true
         font.pixelSize: 14
 

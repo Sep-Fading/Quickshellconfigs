@@ -2,6 +2,7 @@ import QtQuick
 import Quickshell
 import Quickshell.Io
 import "./Icons.js" as Icons
+import "./Colors.js" as Colors
 
 Row {
     id: root
@@ -51,7 +52,21 @@ Row {
                         var iso = raw.substring(0,4) + "-" + raw.substring(4,6) + "-" + raw.substring(6,11) + ":" + raw.substring(11,13) + ":" + raw.substring(13)
                         
                         var dateObj = new Date(iso)
-                        root.taskDue = dateObj.toLocaleTimeString(Qt.locale(), "hh:mm")
+
+                        var now = new Date()
+                        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+                        var tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+                        var taskDay = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate())
+
+                        var timeStr = Qt.formatDateTime(dateObj, "hh:mm")
+
+                        if (taskDay.getTime() === today.getTime()) {
+                            root.taskDue = "Today " + timeStr
+                        } else if (taskDay.getTime() === tomorrow.getTime()) {
+                            root.taskDue = "Tomorrow " + timeStr
+                        } else {
+                            root.taskDue = Qt.formatDateTime(dateObj, "ddd hh:mm")
+                        }
                     } else {
                         root.taskDue = ""
                     }
@@ -73,30 +88,30 @@ Row {
 
     Text {
         text: Icons.taskPending 
-        color: root.hasTask ? "#fab387" : "#585b70" 
+        color: root.hasTask ? Colors.yellow : Colors.gray
         font.pixelSize: 16
         anchors.verticalCenter: parent.verticalCenter
     }
 
     Text {
         text: root.taskDescription
-        color: root.hasTask ? "#cdd6f4" : "#585b70"
+        color: root.hasTask ? Colors.foreground : Colors.gray
         font.bold: true
         anchors.verticalCenter: parent.verticalCenter
     }
 
     Rectangle {
         visible: root.hasTask && root.taskDue !== ""
-        width: timeLabel.width + 10
+        width: timeLabel.width + 12
         height: 20
         radius: 5
-        color: "#313244"
+        color: Colors.color7
         anchors.verticalCenter: parent.verticalCenter
 
         Text {
             id: timeLabel
             text: root.taskDue
-            color: "#fab387"
+            color: Colors.color9
             font.bold: true
             font.pixelSize: 12
             anchors.centerIn: parent

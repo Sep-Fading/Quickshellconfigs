@@ -1,0 +1,1 @@
+/home/sep/.cache/wal/colors-quickshell.js
