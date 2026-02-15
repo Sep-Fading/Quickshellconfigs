@@ -1,6 +1,7 @@
 import QtQuick
 import Quickshell
 import Quickshell.Io
+import "./Icons.js" as Icons
 
 Row {
     id: root
@@ -71,7 +72,7 @@ Row {
     }
 
     Text {
-        text: "" 
+        text: Icons.taskPending 
         color: root.hasTask ? "#fab387" : "#585b70" 
         font.pixelSize: 16
         anchors.verticalCenter: parent.verticalCenter

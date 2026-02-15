@@ -12,14 +12,15 @@ import "./Icons.js" as Icons
 
 Row {
     id: root
-    spacing: 10
+    spacing: 20
     anchors.verticalCenter: parent.verticalCenter
     
+    property var nmAppletItem: null
+
     FontLoader {
         id: materialFont
         source: "file:///usr/share/fonts/TTF/MaterialSymbolsRounded[FILL,GRAD,opsz,wght].ttf"
     }
-
 
     Taskwarrior {}
     
@@ -34,25 +35,46 @@ Row {
             delegate: IconImage {
                 id: trayIcon
                 required property var modelData
+
+                readonly property bool isNm: modelData.title === "NetworkManager Applet" || modelData.id === "nm-applet"
+
+                visible: !isNm
+
+                width: visible ? 18 : 0
+                height: 18
+
+                onIsNmChanged: if (isNm) root.nmAppletItem = modelData
+                Component.onCompleted: if (isNm) root.nmAppletItem = modelData
                 
                 source: modelData ? modelData.icon : ""
-                width: 18; height: 18
 
                 QsMenuOpener {
                     id: trayMenuOpener
                     menu: trayIcon.modelData ? trayIcon.modelData.menu : null
                 }
 
-                ContextMenu.menu: TrayMenu { model: trayMenuOpener.children }
+                TrayMenu { 
+                    id: itemMenu
+                    model: trayMenuOpener.children
+                    x: (parent.width - width) / 2 
+                    y: 30
+                }
 
                 MouseArea {
                     anchors.fill: parent
-                    acceptedButtons: Qt.LeftButton | Qt.MiddleButton
+                    acceptedButtons: Qt.LeftButton | Qt.MiddleButton | Qt.RightButton
                     hoverEnabled: true
                     
                     onClicked: (mouse) => {
-                        if (mouse.button === Qt.LeftButton) 
+                        if (mouse.button === Qt.LeftButton) { 
                             trayIcon.modelData.activate();
+                        } else if (mouse.button === Qt.RightButton) {
+                            if (itemMenu.opened) {
+                                itemMenu.close();
+                            } else {
+                                itemMenu.open();
+                            }
+                        }
                     }
                 }
             }    
@@ -62,7 +84,65 @@ Row {
     component TrayMenu: Menu {
         id: trayMenu
         property alias model: iconImageMenuInstantiator.model
+
+        width: 225
+        height: 1
+        opacity: 0
+
         popupType: Popup.Window
+        clip: true
+        
+        onAboutToShow: {
+            height = 1
+            opacity = 0
+        }
+        
+        onClosed: {
+            height = 1
+            opacity = 0
+        }
+
+        enter: Transition {
+            SequentialAnimation {
+                ScriptAction {
+                    script: { trayMenu.height = 1; trayMenu.opacity = 0 } 
+                }
+                
+                ParallelAnimation {
+                    NumberAnimation {
+                        property: "height"
+                        from: 1
+                        to: trayMenu.implicitHeight
+                        duration: 350
+                        easing.type: Easing.OutQuad
+                    }
+
+                    NumberAnimation {
+                        property: "opacity"
+                        from: 0
+                        to: 1
+                        duration: 200
+                    }
+                }
+            }
+        }
+
+        exit: Transition {
+            ParallelAnimation {
+                NumberAnimation { property: "height"; to: 1; duration: 150; easing.type: Easing.InQuad }
+                NumberAnimation { property: "opacity"; to: 0; duration: 150}
+            }
+        }
+
+        background: Rectangle {
+            color: "#1e1e2e"
+            radius: 12
+            border.color: "#313244"
+            border.width: 1
+        }
+
+        padding: 8
+        spacing: 4
 
         Instantiator {
             id: iconImageMenuInstantiator
@@ -80,14 +160,42 @@ Row {
                 DelegateChoice {
                     roleValue: false
                     delegate: MenuItem {
+                        id: menuItem
+                        
                         required property QsMenuEntry modelData
-                        text: modelData ? modelData.text : ""
+                        
+                        implicitWidth: 200
+                        implicitHeight: 32
+
+                        background: Rectangle {
+                            color: menuItem.highlighted ? "#313244" : "transparent"
+                            radius: 8
+                        }
+
+                        contentItem: Text {
+                            text: menuItem.modelData ? menuItem.modelData.text : ""
+                            color: menuItem.highlighted ? "#89b4fa" : "#cdd6f4"
+                            font.bold: true
+                            font.pixelSize: 13
+                            verticalAlignment: Text.AlignVCenter
+                            leftPadding: 10
+                            elide: Text.ElideRight
+                        }
+                        
                         onTriggered: modelData.triggered()
                     }
                 }
                 DelegateChoice {
                     roleValue: true
-                    delegate: MenuSeparator {}
+                    delegate: MenuSeparator {
+                        padding: 0
+                        verticalPadding: 4
+                        contentItem: Rectangle {
+                            implicitWidth: 200
+                            implicitHeight: 1
+                            color: "#45475a"
+                        }
+                    }
                 }
             }
         }
@@ -251,9 +359,40 @@ Row {
     }
 
     // Wifi 
-    Row {
-        spacing: 5
+    Item {
+        id: wifiWidget
         anchors.verticalCenter: parent.verticalCenter
+        width: wifiRow.width
+        height: 20
+
+        QsMenuOpener {
+            id: wifiMenuOpener
+            menu: root.nmAppletItem ? root.nmAppletItem.menu : null
+        }
+
+        TrayMenu {
+            id: wifiContextMenu
+            model: wifiMenuOpener.children
+            x: (parent.width - width) /2
+            y: 30
+        }
+        
+        /*
+        MouseArea {
+            anchors.fill: parent
+            acceptedButtons: Qt.RightButton
+
+            onClicked: (mouse) => {
+                if (mouse.button === Qt.RightButton && root.nmAppletItem) {
+                    if (wifiContextMenu.opened){
+                        wifiContextMenu.close()
+                    } else {
+                        wifiContextMenu.open()
+                    }
+                }
+            }
+        }
+        */
 
         Process {
             id: wifiProc
@@ -306,32 +445,38 @@ Row {
             }
         }
 
-        Text {
-            id: wifiIcon
-            
-            text: {
-                if (!wifiProc.connected) return Icons.wifiOff
-                
-                if (vpnProc.hasVpn) return Icons.wifiSecured       
+        Row {
+            id: wifiRow
+            spacing: 5
+            anchors.verticalCenter: parent.verticalCenter
 
-                if (wifiProc.signalStrength > 70) return Icons.wifiFull
-                if (wifiProc.signalStrength > 50) return Icons.wifiHalf
-                return Icons.wifiLow
+            Text {
+                id: wifiIcon
+                
+                text: {
+                    if (!wifiProc.connected) return Icons.wifiOff
+                    
+                    if (vpnProc.hasVpn) return Icons.wifiSecured       
+
+                    if (wifiProc.signalStrength > 70) return Icons.wifiFull
+                    if (wifiProc.signalStrength > 50) return Icons.wifiHalf
+                    return Icons.wifiLow
+                }
+
+                font.family: materialFont.name
+                color: vpnProc.hasVpn ? "#a6e3a1" : (wifiProc.connected ? "#89b4fa" : "#585b70")
+                font.pixelSize: 18
+                anchors.verticalCenter: parent.verticalCenter
             }
 
-            font.family: materialFont.name
-            color: vpnProc.hasVpn ? "#a6e3a1" : (wifiProc.connected ? "#89b4fa" : "#585b70")
-            font.pixelSize: 18
-            anchors.verticalCenter: parent.verticalCenter
+            Text {
+                text: wifiProc.connected ? wifiProc.wifiName : "Offline"
+                color: "#cdd6f4"
+                font.bold: true
+                anchors.verticalCenter: parent.verticalCenter
+            }
         }
-
-        Text {
-            text: wifiProc.connected ? wifiProc.wifiName : "Offline"
-            color: "#cdd6f4"
-            font.bold: true
-            anchors.verticalCenter: parent.verticalCenter
-        }
-    }    
+    }
 
     //  Battery
     Row {
