@@ -5,7 +5,6 @@ import "./Colors.js" as Colors
 
 PanelWindow {
     id: topBar
-
     FontLoader {
         id: materialFont
         source: "file:///usr/share/fonts/TTF/MaterialSymbolsRounded[FILL,GRAD,opsz,wght].ttf"
@@ -16,46 +15,87 @@ PanelWindow {
         left: true
         right: true
     }
-    implicitHeight: 30
-    color: Colors.background
+
+    margins {
+        top: 10
+        left: 10
+        right: 10
+    }
+
+    implicitHeight: 34
+    color: "transparent"
 
     WlrLayershell.layer: WlrLayer.Top
     WlrLayershell.exclusionMode: ExclusionMode.Auto
-    
-    Row {
-        id: leftModule
+
+    Rectangle {
+        id: leftIsland
         anchors.left: parent.left
-        spacing: 10
-        anchors.margins: 5
+        anchors.verticalCenter: parent.verticalCenter
 
-        Workspaces {}
+        width: leftContent.width + 20
+        height: 33
+        radius: 20
+        color: Colors.background
 
+    
+        Row {
+            id: leftContent
+            anchors.centerIn: parent
+            Workspaces {}
+        }
     }
 
     // Clock
-    Text {
-        id: timeText
+    Rectangle {
+        id: midIsland
         anchors.centerIn: parent
-        color: Colors.foreground
-        font.bold: true
-        font.pixelSize: 14
+        width: timeText.width + 30
+        height: 33
+        radius: 20
+        color: Colors.background
 
-        function updateTime() {
-            text = Qt.formatDateTime(new Date(), "dd MMM | hh:mm")
-        }
+        Text {
+            id: timeText
+            anchors.centerIn: parent
+            color: Colors.foreground
+            font.bold: true
+            font.pixelSize: 14
 
-        Timer {
-            interval: 1000 // Update every second
-            running: true
-            repeat: true
-            triggeredOnStart: true
-            onTriggered: timeText.updateTime()
+            function updateTime() {
+                text = Qt.formatDateTime(new Date(), "dd MMM | hh:mm")
+            }
+
+            Timer {
+                interval: 1000
+                running: true
+                repeat: true
+                triggeredOnStart: true
+                onTriggered: timeText.updateTime()
+            }
         }
     }
 
-    Tray {
+    Rectangle {
+        id: rightIsland
         anchors.right: parent.right
-        anchors.rightMargin: 10
         anchors.verticalCenter: parent.verticalCenter
+        
+        width: trayModule.width + 20
+        height: 33
+        radius: 20
+        color: Colors.background
+
+        Item {
+            id: trayModule
+            anchors.centerIn: parent
+            width: trayInternal.width
+            height: parent.height
+
+            Tray {
+                id: trayInternal
+                anchors.centerIn: parent
+            }
+        }
     }
 }

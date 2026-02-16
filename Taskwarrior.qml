@@ -9,71 +9,72 @@ Row {
     spacing: 8
     anchors.verticalCenter: parent.verticalCenter
 
-    // Data Storage
     property string taskDescription: "No Tasks"
     property string taskDue: ""
     property bool hasTask: false
     
-    // Internal buffer for accumulating JSON output chunks
     property string _jsonBuffer: ""
 
-    Process {
+Process {
         id: taskProc
-        
-        command: ["task", "(" ,"status:pending", "or", "status:waiting", ")", "sort:due", "limit:1", "export"]
+        command: ["task", "(status:pending or status:waiting)", "sort:due", "limit:1", "export"]
         
         stdout: SplitParser {
-            onRead: (data) => {
-                // Accumulate data chunks (JSON can be split across signals)
-                root._jsonBuffer += data
-            }
+            onRead: (data) => root._jsonBuffer += data
         }
 
         onExited: {
-            var cleanData = root._jsonBuffer.trim()
-            root._jsonBuffer = "" 
+            var cleanData = root._jsonBuffer.trim();
+            root._jsonBuffer = ""; 
             if (cleanData === "" || cleanData === "[]") {
-                root.hasTask = false
-                root.taskDescription = "Free"
-                return
+                root.hasTask = false;
+                root.taskDescription = "Free";
+                return;
             }
 
             try {
-                var tasks = JSON.parse(cleanData)
+                var tasks = JSON.parse(cleanData);
                 if (tasks.length > 0) {
-                    var task = tasks[0]
-                    root.hasTask = true
-                    root.taskDescription = task.description
+                    var task = tasks[0];
+                    root.hasTask = true;
+                    root.taskDescription = task.description;
 
-                    if (task.due) {
-                        // Taskwarrior JSON dates are ISO-8601 compact strings
-                        // Format them for JS Date: 20230101T120000Z -> 2023-01-01T12:00:00Z
-                        var raw = task.due
-                        var iso = raw.substring(0,4) + "-" + raw.substring(4,6) + "-" + raw.substring(6,11) + ":" + raw.substring(11,13) + ":" + raw.substring(13)
-                        
-                        var dateObj = new Date(iso)
+                    // Better date parsing helper
+                    function parseDate(raw) {
+                        if (!raw) return null;
+                        var iso = raw.substring(0,4) + "-" + raw.substring(4,6) + "-" + 
+                                  raw.substring(6,11) + ":" + raw.substring(11,13) + ":" + 
+                                  raw.substring(13);
+                        return new Date(iso);
+                    }
 
-                        var now = new Date()
-                        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-                        var tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
-                        var taskDay = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate())
+                    var now = new Date();
+                    var startObj = parseDate(task.scheduled);
+                    var endObj = parseDate(task.due);
+                    
+                    // Switch logic: Show start time if in the future, else show end time
+                    var targetDate = (startObj && now < startObj) ? startObj : endObj;
 
-                        var timeStr = Qt.formatDateTime(dateObj, "hh:mm")
+                    if (targetDate) {
+                        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                        var tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+                        var targetDay = new Date(targetDate.getFullYear(), targetDate.getMonth(), targetDate.getDate());
+                        var timeStr = Qt.formatDateTime(targetDate, "hh:mm");
 
-                        if (taskDay.getTime() === today.getTime()) {
-                            root.taskDue = "Today " + timeStr
-                        } else if (taskDay.getTime() === tomorrow.getTime()) {
-                            root.taskDue = "Tomorrow " + timeStr
+                        if (targetDay.getTime() === today.getTime()) {
+                            root.taskDue = "Today " + timeStr;
+                        } else if (targetDay.getTime() === tomorrow.getTime()) {
+                            root.taskDue = "Tomorrow " + timeStr;
                         } else {
-                            root.taskDue = Qt.formatDateTime(dateObj, "ddd hh:mm")
+                            root.taskDue = Qt.formatDateTime(targetDate, "ddd hh:mm");
                         }
                     } else {
-                        root.taskDue = ""
+                        root.taskDue = "";
                     }
                 }
             } catch (e) {
-                console.log("TaskJSON Error: " + e)
-                root.hasTask = false
+                console.log("TaskJSON Error: " + e);
+                root.hasTask = false;
             }
         }
     }

@@ -8,6 +8,7 @@ import QtQuick.Controls.Fusion
 import Quickshell.Widgets
 import "./Taskwarrior.qml"
 import "./Icons.js" as Icons
+import "./Colors.js" as Colors
 
 
 Row {
@@ -135,9 +136,9 @@ Row {
         }
 
         background: Rectangle {
-            color: "#1e1e2e"
-            radius: 12
-            border.color: "#313244"
+            color: Colors.background
+            radius: 8
+            border.color: Colors.foreground
             border.width: 1
         }
 
@@ -168,13 +169,13 @@ Row {
                         implicitHeight: 32
 
                         background: Rectangle {
-                            color: menuItem.highlighted ? "#313244" : "transparent"
+                            color: menuItem.highlighted ? Colors.color1 : "transparent"
                             radius: 8
                         }
 
                         contentItem: Text {
                             text: menuItem.modelData ? menuItem.modelData.text : ""
-                            color: menuItem.highlighted ? "#89b4fa" : "#cdd6f4"
+                            color: menuItem.highlighted ? Colors.color5 : Colors.foreground
                             font.bold: true
                             font.pixelSize: 13
                             verticalAlignment: Text.AlignVCenter
@@ -193,7 +194,7 @@ Row {
                         contentItem: Rectangle {
                             implicitWidth: 200
                             implicitHeight: 1
-                            color: "#45475a"
+                            color: Colors.foreground
                         }
                     }
                 }
@@ -252,13 +253,13 @@ Row {
                 return Icons.btOn 
             }
 
-            color: btProc.isPowered ? "#89b4fa" : "#585b70"
+            color: btProc.isPowered ? Colors.blue : Colors.gray
         }
 
         Text {
             text: btProc.deviceName
             visible: btProc.isPowered && btProc.isConnected
-            color: "#cdd6f4"
+            color: Colors.foreground
             font.bold: true
             anchors.verticalCenter: parent.verticalCenter
         }
@@ -320,12 +321,12 @@ Row {
             Text {
                 font.family: materialFont.name
                 font.pixelSize: 22
-                color: volProc.isMuted ? "#f38ba8" : "#89b4fa"
+                color: volProc.isMuted ? Colors.red : Colors.blue
                 anchors.verticalCenter: parent.verticalCenter
                 
                 text: {
                     if (typeof Icons === "undefined") return "Vol" // Safety fallback
-                    if (volProc.isMuted) return Icons.volMute
+                    if (volProc.isMuted) return Icons.volOff
                     if (volProc.volume >= 60) return Icons.volHigh
                     if (volProc.volume >= 30) return Icons.volMed
                     return Icons.volLow
@@ -334,7 +335,7 @@ Row {
 
             Text {
                 text: volProc.isMuted ? "Muted" : volProc.volume + "%"
-                color: "#cdd6f4"
+                color: Colors.foreground
                 font.bold: true
                 anchors.verticalCenter: parent.verticalCenter
             }
@@ -464,14 +465,14 @@ Row {
                 }
 
                 font.family: materialFont.name
-                color: vpnProc.hasVpn ? "#a6e3a1" : (wifiProc.connected ? "#89b4fa" : "#585b70")
+                color: vpnProc.hasVpn ? Colors.green : (wifiProc.connected ? Colors.blue : Colors.gray)
                 font.pixelSize: 18
                 anchors.verticalCenter: parent.verticalCenter
             }
 
             Text {
                 text: wifiProc.connected ? wifiProc.wifiName : "Offline"
-                color: "#cdd6f4"
+                color: Colors.foreground
                 font.bold: true
                 anchors.verticalCenter: parent.verticalCenter
             }
@@ -493,10 +494,10 @@ Row {
             font.family: materialFont.name
             font.pixelSize: 18
             color: (batteryRow.bat && batteryRow.bat.state === UPowerDeviceState.Charging) 
-                   ? "#a6e3a1" 
+                   ? Colors.blue 
                    : (batteryRow.bat && batteryRow.bat.percentage <= 0.2) 
-                       ? "#f38ba8" 
-                       : "#cdd6f4"
+                       ? Colors.red
+                       : Colors.green
             
             text: {
                 if (!batteryRow.visible) return ""
@@ -517,7 +518,7 @@ Row {
         Text {
             // Safety check: prevent error accessing 'percentage' if null
             text: batteryRow.visible ? Math.round(batteryRow.bat.percentage * 100) + "%" : ""
-            color: "#cdd6f4"
+            color: Colors.foreground
             font.bold: true
             anchors.verticalCenter: parent.verticalCenter
         }
